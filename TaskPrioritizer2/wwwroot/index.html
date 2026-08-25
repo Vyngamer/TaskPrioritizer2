@@ -3,662 +3,2576 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Approach Queue</title>
+    <title>TaskPrioritizer</title>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+
     <style>
-        :root {
-            --bg: #0A121C;
-            --panel: #101B29;
-            --panel-raised: #142235;
-            --border: #1E2E40;
-            --border-soft: #182636;
-            --text: #E8EDF2;
-            --text-muted: #8CA0B3;
-            --text-faint: #546578;
-            --amber: #F2A93B;
-            --cyan: #4FD8CB;
-            --red: #E85C4A;
-            --green: #6FCF97;
-            --font-display: 'Space Grotesk', sans-serif;
-            --font-mono: 'IBM Plex Mono', monospace;
-        }
-
-        * {
-            box-sizing: border-box;
-        }
-
-        html, body {
-            margin: 0;
-            padding: 0;
-            background: radial-gradient(ellipse 1200px 600px at 50% -10%, rgba(79,216,203,0.06), transparent), var(--bg);
-            color: var(--text);
-            font-family: var(--font-display);
-            min-height: 100vh;
-            -webkit-font-smoothing: antialiased;
-        }
-
-        body {
-            padding: 32px 20px 80px;
-        }
-
-        .wrap {
-            max-width: 880px;
-            margin: 0 auto;
-        }
-
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            gap: 24px;
-            padding-bottom: 24px;
-            border-bottom: 1px solid var(--border);
-            margin-bottom: 28px;
-            flex-wrap: wrap;
-        }
-
-        .header-left .eyebrow {
-            font-family: var(--font-mono);
-            font-size: 11px;
-            letter-spacing: 0.18em;
-            color: var(--cyan);
-            text-transform: uppercase;
-            margin: 0 0 8px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .eyebrow .dot {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: var(--cyan);
-            box-shadow: 0 0 8px var(--cyan);
-            animation: pulse 2.4s ease-in-out infinite;
-        }
-
-        @keyframes pulse {
-            0%,100% {
-                opacity: 1;
-            }
-
-            50% {
-                opacity: 0.35;
-            }
-        }
-
-        .header-left h1 {
-            font-size: 32px;
-            font-weight: 700;
-            margin: 0;
-            letter-spacing: -0.01em;
-        }
-
-        .header-left p {
-            margin: 6px 0 0;
-            color: var(--text-muted);
-            font-size: 14.5px;
-            max-width: 46ch;
-        }
-
-        .stats {
-            display: flex;
-            gap: 22px;
-        }
-
-        .stat {
-            font-family: var(--font-mono);
-            text-align: right;
-        }
-
-            .stat .num {
-                font-size: 26px;
-                font-weight: 600;
-                line-height: 1;
-                color: var(--text);
-            }
-
-            .stat .label {
-                font-size: 10px;
-                letter-spacing: 0.1em;
-                color: var(--text-faint);
-                text-transform: uppercase;
-                margin-top: 5px;
-            }
-
-        .toolbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-            gap: 12px;
-        }
-
-            .toolbar .filters {
-                display: flex;
-                gap: 6px;
-                font-family: var(--font-mono);
-                font-size: 12px;
-            }
-
-        .filters button {
-            background: transparent;
-            border: 1px solid var(--border);
-            color: var(--text-muted);
-            padding: 6px 12px;
-            border-radius: 20px;
-            cursor: pointer;
-            transition: all .15s ease;
-        }
-
-            .filters button.active {
-                border-color: var(--cyan);
-                color: var(--cyan);
-                background: rgba(79,216,203,0.08);
-            }
-
-            .filters button:hover {
-                color: var(--text);
-            }
-
-        .add-btn {
-            background: var(--cyan);
-            color: #06201D;
-            border: none;
-            font-family: var(--font-display);
-            font-weight: 600;
-            font-size: 13.5px;
-            padding: 10px 18px;
-            border-radius: 8px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: transform .12s ease, box-shadow .12s ease;
-            text-decoration: none;
-        }
-
-            .add-btn:hover {
-                transform: translateY(-1px);
-                box-shadow: 0 6px 18px rgba(79,216,203,0.25);
-            }
-
-            .add-btn:active {
-                transform: translateY(0);
-            }
-
-        .queue {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .row {
-            background: var(--panel);
-            border: 1px solid var(--border-soft);
-            border-radius: 12px;
-            padding: 16px 18px;
-            display: grid;
-            grid-template-columns: auto 56px 1fr auto auto;
-            align-items: center;
-            gap: 18px;
-            opacity: 0;
-            transform: translateY(6px);
-            animation: rise .45s ease forwards;
-            transition: border-color .15s ease, background .15s ease;
-        }
-
-            .row:hover {
-                border-color: var(--border);
-                background: var(--panel-raised);
-            }
-
-            .row.completed {
-                opacity: 0.5 !important;
-            }
-
-                .row.completed .gauge, .row.completed .title {
-                    filter: grayscale(0.6);
-                }
-
-        @keyframes rise {
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .rank {
-            font-family: var(--font-mono);
-            font-size: 11px;
-            color: var(--text-faint);
-            width: 26px;
-            text-align: center;
-        }
-
-            .rank .n {
-                display: block;
-                font-size: 15px;
-                color: var(--text-muted);
-                font-weight: 600;
-            }
-
-        .gauge {
-            position: relative;
-            width: 56px;
-            height: 56px;
-        }
-
-            .gauge svg {
-                transform: rotate(-90deg);
-            }
-
-        .gauge-track {
-            fill: none;
-            stroke: var(--border);
-            stroke-width: 5;
-        }
-
-        .gauge-value {
-            fill: none;
-            stroke-width: 5;
-            stroke-linecap: round;
-            transition: stroke-dashoffset .6s cubic-bezier(.4,0,.2,1), stroke .4s ease;
-        }
-
-        .gauge-num {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: var(--font-mono);
-            font-size: 12.5px;
-            font-weight: 600;
-        }
-
-        .content {
-            min-width: 0;
-        }
-
-        .title-line {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .title {
-            font-size: 15.5px;
-            font-weight: 600;
-            color: var(--text);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .row.completed .title {
-            text-decoration: line-through;
-            text-decoration-color: var(--text-faint);
-        }
-
-        .tag {
-            font-family: var(--font-mono);
-            font-size: 10.5px;
-            letter-spacing: 0.04em;
-            padding: 2px 8px;
-            border-radius: 20px;
-            border: 1px solid var(--border);
-            color: var(--text-muted);
-            white-space: nowrap;
-            text-transform: uppercase;
-        }
-
-        .meta-line {
-            display: flex;
-            gap: 14px;
-            margin-top: 6px;
-            font-family: var(--font-mono);
-            font-size: 12px;
-            color: var(--text-faint);
-            flex-wrap: wrap;
-        }
-
-            .meta-line .countdown.urgent {
-                color: var(--red);
-            }
-
-            .meta-line .countdown.soon {
-                color: var(--amber);
-            }
-
-        .weight {
-            text-align: right;
-            font-family: var(--font-mono);
-        }
-
-            .weight .val {
-                font-size: 17px;
-                font-weight: 600;
-                color: var(--text);
-            }
-
-            .weight .lbl {
-                font-size: 9.5px;
-                color: var(--text-faint);
-                letter-spacing: 0.08em;
-                text-transform: uppercase;
-                margin-top: 2px;
-            }
-
-        .actions {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-
-        .icon-btn {
-            width: 34px;
-            height: 34px;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            background: transparent;
-            color: var(--text-muted);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all .15s ease;
-        }
-
-            .icon-btn:hover {
-                border-color: var(--green);
-                color: var(--green);
-                background: rgba(111,207,151,0.08);
-            }
-
-            .icon-btn.del:hover {
-                border-color: var(--red);
-                color: var(--red);
-                background: rgba(232,92,74,0.08);
-            }
-
-            .icon-btn svg {
-                width: 16px;
-                height: 16px;
-            }
-
-        .empty {
-            text-align: center;
-            padding: 64px 20px;
-            border: 1px dashed var(--border);
-            border-radius: 14px;
-            color: var(--text-muted);
-        }
-
-            .empty .glyph {
-                font-size: 28px;
-                margin-bottom: 10px;
-                opacity: .5;
-            }
-
-            .empty p {
-                margin: 4px 0 0;
-                font-size: 13.5px;
-            }
-
-        .banner {
-            font-family: var(--font-mono);
-            font-size: 11.5px;
-            color: var(--amber);
-            background: rgba(242,169,59,0.08);
-            border: 1px solid rgba(242,169,59,0.25);
-            padding: 8px 14px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            display: none;
-        }
-
-            .banner.show {
-                display: block;
-            }
-
-        ::selection {
-            background: rgba(79,216,203,0.3);
-        }
-
-        @media (max-width:600px) {
-            .row {
-                grid-template-columns: auto 44px 1fr;
-                grid-template-areas: "rank gauge content" "rank gauge weight" ". . actions";
-                row-gap: 10px;
-            }
-
-            .rank {
-                grid-area: rank;
-            }
-
-            .gauge {
-                grid-area: gauge;
-                width: 44px;
-                height: 44px;
-            }
-
-            .content {
-                grid-area: content;
-            }
-
-            .weight {
-                grid-area: weight;
-                text-align: left;
-            }
-
-            .actions {
-                grid-area: actions;
-                justify-self: end;
-            }
-        }
-
-        @media (prefers-reduced-motion:reduce) {
-            * {
-                animation: none !important;
-                transition: none !important;
-            }
-        }
+           :root {
+               --tier-nominal: #38bdf8;
+               --tier-elevated: #fbbf24;
+               --tier-critical: #fb7185;
+           }
+
+           html,
+           body {
+               font-family: 'Space Grotesk', sans-serif;
+           }
+
+           .font-mono-data {
+               font-family: 'IBM Plex Mono', monospace;
+           }
+
+           /* =========================================================
+        SIDEBAR
+        ========================================================= */
+
+           .sidebar {
+               position: fixed;
+               top: 0;
+               left: 0;
+               bottom: 0;
+               width: 340px;
+               background: #0f1424;
+               border-right: 1px solid #1e2538;
+               padding: 22px;
+               overflow-y: auto;
+               overflow-x: hidden;
+               box-sizing: border-box;
+               transition: transform .25s ease;
+               z-index: 40;
+           }
+
+           .main {
+               margin-left: 340px;
+           }
+
+           @media (max-width:1023px) {
+
+               .sidebar {
+                   width: min(340px, 92vw);
+                   transform: translateX(-100%);
+               }
+
+                   .sidebar.open {
+                       transform: translateX(0);
+                   }
+
+               .main {
+                   margin-left: 0;
+               }
+           }
+
+
+           /* =========================================================
+        FORM CONTROLS
+        ========================================================= */
+
+           .form-control {
+               width: 100%;
+               min-width: 0;
+               box-sizing: border-box;
+               padding: 0.65rem 0.75rem;
+               background: #0b0f1c;
+               border: 1px solid #1e2538;
+               border-radius: 0.5rem;
+               color: #e2e8f0;
+               font-size: 0.875rem;
+               outline: none;
+               transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+           }
+
+               .form-control::placeholder {
+                   color: #475569;
+                   opacity: 1;
+               }
+
+               .form-control:hover {
+                   border-color: #334155;
+               }
+
+               .form-control:focus {
+                   border-color: #6366f1;
+                   background: #0d1220;
+                   box-shadow: 0 0 0 3px rgba(99,102,241,.10);
+               }
+
+           input[type="datetime-local"],
+           input[type="number"] {
+               min-height: 40px;
+           }
+
+           .form-label {
+               display: block;
+               margin-bottom: 0.4rem;
+               font-size: 0.72rem;
+               letter-spacing: 0.04em;
+               text-transform: uppercase;
+               color: #64748b;
+           }
+
+
+           /* =========================================================
+        SIDEBAR FORM
+        ========================================================= */
+
+           #taskForm {
+               gap: 1rem;
+           }
+
+               #taskForm .grid {
+                   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+               }
+
+           @media (max-width:360px) {
+
+               #taskForm .grid {
+                   grid-template-columns: 1fr;
+               }
+           }
+
+
+           /* =========================================================
+        VIEW TOGGLE
+        ========================================================= */
+
+           .seg-btn {
+               transition: all .15s ease;
+           }
+
+               .seg-btn.active {
+                   background: #4f46e5;
+                   color: #fff;
+                   box-shadow: 0 2px 8px rgba(79,70,229,0.35);
+               }
+
+
+           /* =========================================================
+        GAUGE
+        ========================================================= */
+
+           .gauge-value {
+               transition: stroke-dashoffset .6s cubic-bezier(.4,0,.2,1), stroke .4s ease;
+           }
+
+
+           /* =========================================================
+        ROW ANIMATION
+        ========================================================= */
+
+           .row-card {
+               opacity: 0;
+               transform: translateY(6px);
+               animation: rise .4s ease forwards;
+           }
+
+           @keyframes rise {
+
+               to {
+                   opacity: 1;
+                   transform: translateY(0);
+               }
+           }
+
+
+           /* =========================================================
+        FILTER
+        ========================================================= */
+
+           .filter-btn {
+               transition: all .15s ease;
+           }
+
+               .filter-btn.active {
+                   border-color: #6366f1;
+                   color: #a5b4fc;
+                   background: rgba(99,102,241,0.1);
+               }
+
+
+           /* =========================================================
+        QUADRANTS
+        ========================================================= */
+
+           .quadrant {
+               min-height: 180px;
+           }
+
+
+           /* =========================================================
+        SCROLLBAR
+        ========================================================= */
+
+           ::-webkit-scrollbar {
+               width: 8px;
+           }
+
+           ::-webkit-scrollbar-track {
+               background: transparent;
+           }
+
+           ::-webkit-scrollbar-thumb {
+               background: #1e2538;
+               border-radius: 4px;
+           }
+
+
+           /* =========================================================
+        ACCESSIBILITY
+        ========================================================= */
+
+           @media (prefers-reduced-motion:reduce) {
+
+               * {
+                   animation: none !important;
+                   transition: none !important;
+               }
+           }
     </style>
 </head>
-<body>
-    <div class="wrap">
-        <div class="header">
-            <div class="header-left">
-                <p class="eyebrow"><span class="dot"></span>Live queue</p>
-                <h1>Approach Queue</h1>
-                <p>Tasks lined up by urgency and weight — highest priority lands first.</p>
+
+
+<body class="bg-slate-950 text-slate-100 min-h-screen antialiased">
+
+
+    <!-- =========================================================
+         SIDEBAR
+         ========================================================= -->
+
+    <aside class="sidebar" id="sidebar">
+
+        <!-- Logo -->
+        <div class="flex items-center justify-between mb-6">
+
+            <div class="flex items-center gap-2.5">
+
+                <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white">
+
+                    <i data-lucide="layout-grid"
+                       class="w-4 h-4"></i>
+
+                </div>
+
+                <span class="font-bold text-[15px] tracking-tight">
+                    TaskPrioritizer
+                </span>
+
             </div>
-            <div class="stats">
-                <div class="stat"><div class="num" id="statCount">0</div><div class="label">In queue</div></div>
-                <div class="stat"><div class="num" id="statCritical">0</div><div class="label">Critical</div></div>
-                <div class="stat"><div class="num" id="statDone">0</div><div class="label">Landed</div></div>
-            </div>
+
+
+            <button id="closeSidebar"
+                    type="button"
+                    class="lg:hidden text-slate-500 hover:text-slate-200"
+                    aria-label="Close sidebar">
+
+                <i data-lucide="x"
+                   class="w-5 h-5"></i>
+
+            </button>
+
         </div>
 
-        <div class="banner" id="offlineBanner">API unreachable — showing sample queue. Connect to /api/tasks to go live.</div>
 
-        <div class="toolbar">
-            <div class="filters">
-                <button class="active" data-filter="active">Active</button>
-                <button data-filter="all">All</button>
-                <button data-filter="completed">Landed</button>
+        <!-- =======================================================
+             STATISTICS
+             ======================================================= -->
+
+        <div class="mb-6 grid grid-cols-3 gap-2 font-mono-data text-center">
+
+            <div class="bg-slate-900/60 border border-slate-800 rounded-lg py-2.5">
+
+                <div class="text-lg font-semibold"
+                     id="statActive">
+                    0
+                </div>
+
+                <div class="text-[9px] uppercase tracking-wider text-slate-500 mt-0.5">
+                    Active
+                </div>
+
             </div>
 
-            <a class="add-btn" id="addBtn" href="add-task.html">
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>
-                Add task
-            </a>
+
+            <div class="bg-slate-900/60 border border-slate-800 rounded-lg py-2.5">
+
+                <div class="text-lg font-semibold text-rose-400"
+                     id="statCritical">
+                    0
+                </div>
+
+                <div class="text-[9px] uppercase tracking-wider text-slate-500 mt-0.5">
+                    Critical
+                </div>
+
+            </div>
+
+
+            <div class="bg-slate-900/60 border border-slate-800 rounded-lg py-2.5">
+
+                <div class="text-lg font-semibold text-emerald-400"
+                     id="statDone">
+                    0
+                </div>
+
+                <div class="text-[9px] uppercase tracking-wider text-slate-500 mt-0.5">
+                    Landed
+                </div>
+
+            </div>
+
         </div>
 
-        <div class="queue" id="queue"></div>
+
+        <!-- =======================================================
+             ADD TASK
+             ======================================================= -->
+
+        <div class="bg-slate-900/60 border border-slate-800 rounded-xl overflow-hidden">
+
+            <div class="px-4 py-3.5 border-b border-slate-800 font-semibold text-sm flex items-center gap-2">
+
+                <i data-lucide="plus-circle"
+                   class="w-4 h-4 text-indigo-400"></i>
+
+                <span>
+                    Add new task
+                </span>
+
+            </div>
+
+
+            <form id="taskForm"
+                  class="p-4 flex flex-col">
+
+
+                <!-- TITLE -->
+
+                <div>
+
+                    <label class="form-label"
+                           for="fTitle">
+                        Title
+                    </label>
+
+                    <input type="text"
+                           class="form-control"
+                           id="fTitle"
+                           name="title"
+                           placeholder="Database ERD submission"
+                           autocomplete="off">
+
+                </div>
+
+
+                <!-- SUBJECT -->
+
+                <div>
+
+                    <label class="form-label"
+                           for="fSubject">
+                        Subject / module
+                    </label>
+
+                    <input type="text"
+                           class="form-control"
+                           id="fSubject"
+                           name="subject"
+                           placeholder="Databases"
+                           autocomplete="off">
+
+                </div>
+
+
+                <!-- DATE + WEIGHT -->
+
+                <div class="grid grid-cols-2 gap-3">
+
+
+                    <div class="min-w-0">
+
+                        <label class="form-label"
+                               for="fDue">
+                            Due date
+                        </label>
+
+                        <input type="datetime-local"
+                               class="form-control"
+                               id="fDue"
+                               name="dueDate">
+
+                    </div>
+
+
+                    <div class="min-w-0">
+
+                        <label class="form-label"
+                               for="fWeight">
+                            Weight (%)
+                        </label>
+
+                        <input type="number"
+                               min="0"
+                               max="100"
+                               step="0.01"
+                               class="form-control"
+                               id="fWeight"
+                               name="weight"
+                               placeholder="20"
+                               inputmode="decimal">
+
+                    </div>
+
+                </div>
+
+
+                <!-- ERROR -->
+
+                <p class="text-rose-400 text-xs hidden"
+                   id="formErr"></p>
+
+
+                <!-- CREATE BUTTON -->
+
+                <button type="submit"
+                        id="createTaskBtn"
+                        class="w-full bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-semibold text-sm py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2 mt-1">
+
+                    <i data-lucide="send"
+                       class="w-3.5 h-3.5"></i>
+
+                    Create task
+
+                </button>
+
+
+            </form>
+
+        </div>
+
+
+        <!-- API STATUS -->
+
+        <p class="text-[11px] text-slate-600 mt-4 leading-relaxed font-mono-data"
+           id="offlineNote"></p>
+
+    </aside>
+
+
+    <!-- MOBILE SCRIM -->
+
+    <div class="lg:hidden fixed inset-0 bg-black/60 z-30 hidden"
+         id="scrim"></div>
+
+
+
+    <!-- =========================================================
+         MAIN
+         ========================================================= -->
+
+    <div class="main">
+
+
+        <!-- =======================================================
+             HEADER
+             ======================================================= -->
+
+        <header class="border-b border-slate-800 bg-slate-950/80 backdrop-blur-md sticky top-0 z-20">
+
+            <div class="px-6 h-16 flex items-center justify-between gap-4">
+
+
+                <!-- MOBILE MENU -->
+
+                <button id="openSidebar"
+                        type="button"
+                        class="lg:hidden text-slate-400 hover:text-slate-100"
+                        aria-label="Open sidebar">
+
+                    <i data-lucide="menu"
+                       class="w-5 h-5"></i>
+
+                </button>
+
+
+                <div class="hidden lg:block"></div>
+
+
+                <!-- HEADER ACTIONS -->
+
+                <div class="flex items-center gap-3">
+
+
+                    <!-- VIEW SWITCHER -->
+
+                    <div class="flex bg-slate-900 p-1 rounded-lg border border-slate-800 font-mono-data text-xs">
+
+                        <button type="button"
+                                class="seg-btn active px-3 py-1.5 rounded-md font-semibold"
+                                data-view="matrix">
+                            Matrix
+                        </button>
+
+
+                        <button type="button"
+                                class="seg-btn px-3 py-1.5 rounded-md font-medium text-slate-400"
+                                data-view="list">
+                            List
+                        </button>
+
+                    </div>
+
+
+                    <!-- NEW TASK -->
+
+                    <button id="newTaskBtn"
+                            type="button"
+                            class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors shadow-md">
+
+                        <i data-lucide="plus"
+                           class="w-4 h-4"></i>
+
+                        New task
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        </header>
+
+
+
+        <!-- =======================================================
+             CONTENT
+             ======================================================= -->
+
+        <main class="max-w-6xl w-full mx-auto p-6 flex flex-col gap-6">
+
+
+            <!-- PAGE TITLE -->
+
+            <div>
+
+                <h1 class="text-2xl font-bold">
+                    Eisenhower Prioritization
+                </h1>
+
+                <p class="text-slate-400 text-sm mt-1">
+                    Focus on what matters, based on marks weight and time to deadline.
+                </p>
+
+            </div>
+
+
+            <!-- API WARNING -->
+
+            <p class="font-mono-data text-xs text-amber-400 bg-amber-400/10 border border-amber-400/25 rounded-lg px-3.5 py-2 hidden"
+               id="offlineBanner">
+                API unreachable — showing sample tasks. Start the ASP.NET Core application to save tasks.
+            </p>
+
+
+            <!-- =====================================================
+                 LIST TOOLBAR
+                 ===================================================== -->
+
+            <div class="flex justify-between items-center"
+                 id="listToolbar">
+
+                <div class="flex gap-2 font-mono-data text-xs">
+
+
+                    <button type="button"
+                            class="filter-btn active border border-slate-800 px-3 py-1.5 rounded-full"
+                            data-filter="active">
+                        Active
+                    </button>
+
+
+                    <button type="button"
+                            class="filter-btn border border-slate-800 px-3 py-1.5 rounded-full text-slate-400"
+                            data-filter="all">
+                        All
+                    </button>
+
+
+                    <button type="button"
+                            class="filter-btn border border-slate-800 px-3 py-1.5 rounded-full text-slate-400"
+                            data-filter="completed">
+                        Landed
+                    </button>
+
+
+                </div>
+
+            </div>
+
+
+            <!-- =====================================================
+                 LIST VIEW
+                 ===================================================== -->
+
+            <div id="listView"
+                 class="flex flex-col gap-2.5"></div>
+
+
+
+            <!-- =====================================================
+                 MATRIX VIEW
+                 ===================================================== -->
+
+            <div id="matrixView">
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+
+                    <!-- DO FIRST -->
+
+                    <div class="quadrant bg-rose-500/[0.06] border border-rose-500/25 rounded-xl p-4">
+
+                        <div class="flex items-center gap-2 mb-3">
+
+                            <i data-lucide="flame"
+                               class="w-4 h-4 text-rose-400"></i>
+
+                            <span class="font-semibold text-sm">
+                                Do first
+                            </span>
+
+                            <span class="text-[10px] text-slate-500 font-mono-data ml-auto">
+                                Heavy · Soon
+                            </span>
+
+                        </div>
+
+                        <div class="flex flex-col gap-2"
+                             id="qDoFirst"></div>
+
+                    </div>
+
+
+
+                    <!-- SCHEDULE -->
+
+                    <div class="quadrant bg-indigo-500/[0.06] border border-indigo-500/25 rounded-xl p-4">
+
+                        <div class="flex items-center gap-2 mb-3">
+
+                            <i data-lucide="calendar-clock"
+                               class="w-4 h-4 text-indigo-400"></i>
+
+                            <span class="font-semibold text-sm">
+                                Schedule
+                            </span>
+
+                            <span class="text-[10px] text-slate-500 font-mono-data ml-auto">
+                                Heavy · Later
+                            </span>
+
+                        </div>
+
+                        <div class="flex flex-col gap-2"
+                             id="qSchedule"></div>
+
+                    </div>
+
+
+
+                    <!-- QUICK WINS -->
+
+                    <div class="quadrant bg-amber-500/[0.06] border border-amber-500/25 rounded-xl p-4">
+
+                        <div class="flex items-center gap-2 mb-3">
+
+                            <i data-lucide="zap"
+                               class="w-4 h-4 text-amber-400"></i>
+
+                            <span class="font-semibold text-sm">
+                                Quick wins
+                            </span>
+
+                            <span class="text-[10px] text-slate-500 font-mono-data ml-auto">
+                                Light · Soon
+                            </span>
+
+                        </div>
+
+                        <div class="flex flex-col gap-2"
+                             id="qQuick"></div>
+
+                    </div>
+
+
+
+                    <!-- LATER -->
+
+                    <div class="quadrant bg-slate-500/[0.06] border border-slate-700 rounded-xl p-4">
+
+                        <div class="flex items-center gap-2 mb-3">
+
+                            <i data-lucide="inbox"
+                               class="w-4 h-4 text-slate-400"></i>
+
+                            <span class="font-semibold text-sm">
+                                Later
+                            </span>
+
+                            <span class="text-[10px] text-slate-500 font-mono-data ml-auto">
+                                Light · Later
+                            </span>
+
+                        </div>
+
+                        <div class="flex flex-col gap-2"
+                             id="qLater"></div>
+
+                    </div>
+
+
+                </div>
+
+            </div>
+
+        </main>
+
     </div>
 
+
+
     <script>
+
+        /* =========================================================
+           API
+           ========================================================= */
+
         const API = '/api/tasks';
+
         let tasks = [];
+
         let usingSample = false;
+
+        let currentView = 'matrix';
+
         let currentFilter = 'active';
 
+
+
+        /* =========================================================
+           SAMPLE DATA
+           ========================================================= */
+
+        function addHours(hours) {
+
+            return new Date(
+                Date.now() +
+                hours * 3600000
+            ).toISOString();
+
+        }
+
+
         const sample = [
-            { id: 1, title: 'Database ERD submission', subject: 'Databases', dueDate: addHours(6), marksWeight: 25, isCompleted: false },
-            { id: 2, title: 'AI ethics reflection essay', subject: 'AI & Society', dueDate: addHours(30), marksWeight: 10, isCompleted: false },
-            { id: 3, title: 'Applied ML group project', subject: 'Machine Learning', dueDate: addHours(72), marksWeight: 35, isCompleted: false },
-            { id: 4, title: 'DSA problem set 4', subject: 'Data Structures', dueDate: addHours(150), marksWeight: 8, isCompleted: false },
-            { id: 5, title: 'C systems programming lab', subject: 'Systems', dueDate: addHours(4), marksWeight: 15, isCompleted: false },
-            { id: 6, title: 'Weekly reading response', subject: 'AI & Society', dueDate: addHours(-2), marksWeight: 5, isCompleted: true },
+
+            {
+                id: 1,
+                title: 'Database ERD submission',
+                subject: 'Databases',
+                dueDate: addHours(6),
+                marksWeight: 25,
+                isCompleted: false
+            },
+
+            {
+                id: 2,
+                title: 'AI ethics reflection essay',
+                subject: 'AI & Society',
+                dueDate: addHours(30),
+                marksWeight: 10,
+                isCompleted: false
+            },
+
+            {
+                id: 3,
+                title: 'Applied ML group project',
+                subject: 'Machine Learning',
+                dueDate: addHours(72),
+                marksWeight: 35,
+                isCompleted: false
+            },
+
+            {
+                id: 4,
+                title: 'DSA problem set 4',
+                subject: 'Data Structures',
+                dueDate: addHours(150),
+                marksWeight: 8,
+                isCompleted: false
+            },
+
+            {
+                id: 5,
+                title: 'C systems programming lab',
+                subject: 'Systems',
+                dueDate: addHours(4),
+                marksWeight: 15,
+                isCompleted: false
+            },
+
+            {
+                id: 6,
+                title: 'Weekly reading response',
+                subject: 'AI & Society',
+                dueDate: addHours(-2),
+                marksWeight: 5,
+                isCompleted: true
+            }
+
         ];
 
-        function addHours(h) { return new Date(Date.now() + h * 3600 * 1000).toISOString(); }
 
-        function priorityScore(t) {
-            let daysLeft = (new Date(t.dueDate) - new Date()) / 86400000;
-            if (daysLeft < 0.5) daysLeft = 0.5;
-            const weightScore = t.marksWeight * 0.6;
-            const urgencyScore = (1.0 / daysLeft) * 40.0;
-            return Math.round((weightScore + urgencyScore) * 100) / 100;
+
+        /* =========================================================
+           PRIORITY
+           ========================================================= */
+
+        function priorityScore(task) {
+
+            let daysLeft =
+                (
+                    new Date(task.dueDate).getTime() -
+                    Date.now()
+                ) / 86400000;
+
+
+            if (daysLeft < 0.5) {
+                daysLeft = 0.5;
+            }
+
+
+            const weightScore =
+                Number(task.marksWeight || 0) * 0.6;
+
+
+            const urgencyScore =
+                (1 / daysLeft) * 40;
+
+
+            return Math.round(
+                (weightScore + urgencyScore) * 100
+            ) / 100;
+
         }
+
+
+        function getScore(task) {
+
+            const apiScore =
+                Number(task.priorityScore);
+
+
+            if (
+                Number.isFinite(apiScore)
+            ) {
+
+                return apiScore;
+
+            }
+
+
+            return priorityScore(task);
+
+        }
+
+
+        function daysLeft(task) {
+
+            return (
+                new Date(task.dueDate).getTime() -
+                Date.now()
+            ) / 86400000;
+
+        }
+
+
+
+        /* =========================================================
+           PRIORITY TIER
+           ========================================================= */
 
         function tier(score) {
-            if (score >= 70) return { color: 'var(--red)', name: 'critical' };
-            if (score >= 40) return { color: 'var(--amber)', name: 'elevated' };
-            return { color: 'var(--cyan)', name: 'nominal' };
+
+            if (score >= 70) {
+
+                return {
+                    color: 'var(--tier-critical)',
+                    cls: 'text-rose-400'
+                };
+
+            }
+
+
+            if (score >= 40) {
+
+                return {
+                    color: 'var(--tier-elevated)',
+                    cls: 'text-amber-400'
+                };
+
+            }
+
+
+            return {
+                color: 'var(--tier-nominal)',
+                cls: 'text-sky-400'
+            };
+
         }
 
-        function fmtCountdown(dueDate) {
-            const ms = new Date(dueDate) - new Date();
-            const hrs = ms / 3600000;
-            if (hrs < 0) return { text: 'Overdue', cls: 'urgent' };
-            if (hrs < 24) return { text: `T-${Math.round(hrs)}h`, cls: 'urgent' };
-            if (hrs < 72) return { text: `T-${Math.round(hrs / 24)}d`, cls: 'soon' };
-            return { text: `T-${Math.round(hrs / 24)}d`, cls: '' };
+
+
+        /* =========================================================
+           COUNTDOWN
+           ========================================================= */
+
+        function fmtCountdown(task) {
+
+            const hours =
+                daysLeft(task) * 24;
+
+
+            if (hours < 0) {
+
+                return {
+                    text: 'Overdue',
+                    cls: 'text-rose-400'
+                };
+
+            }
+
+
+            if (hours < 1) {
+
+                return {
+                    text: `T-${Math.max(
+                        1,
+                        Math.ceil(hours * 60)
+                    )}m`,
+                    cls: 'text-rose-400'
+                };
+
+            }
+
+
+            if (hours < 24) {
+
+                return {
+                    text: `T-${Math.ceil(hours)}h`,
+                    cls: 'text-rose-400'
+                };
+
+            }
+
+
+            if (hours < 72) {
+
+                return {
+                    text: `T-${Math.ceil(
+                        hours / 24
+                    )}d`,
+                    cls: 'text-amber-400'
+                };
+
+            }
+
+
+            return {
+                text: `T-${Math.ceil(
+                    hours / 24
+                )}d`,
+                cls: 'text-slate-500'
+            };
+
         }
 
-        function fmtDue(dueDate) {
-            return new Date(dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) +
-                ' · ' + new Date(dueDate).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+
+
+        /* =========================================================
+           DATE FORMAT
+           ========================================================= */
+
+        function fmtDue(date) {
+
+            const d =
+                new Date(date);
+
+
+            if (
+                Number.isNaN(
+                    d.getTime()
+                )
+            ) {
+
+                return 'No due date';
+
+            }
+
+
+            return (
+
+                d.toLocaleDateString(
+                    undefined,
+                    {
+                        month: 'short',
+                        day: 'numeric'
+                    }
+                )
+
+                +
+
+                ' · '
+
+                +
+
+                d.toLocaleTimeString(
+                    undefined,
+                    {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    }
+                )
+
+            );
+
         }
+
+
+
+        /* =========================================================
+           ESCAPE HTML
+           ========================================================= */
+
+        function esc(value) {
+
+            const div =
+                document.createElement('div');
+
+            div.textContent =
+                value ?? '';
+
+            return div.innerHTML;
+
+        }
+
+
+
+        /* =========================================================
+           LOAD TASKS
+           ========================================================= */
 
         async function loadTasks() {
+
             try {
-                const res = await fetch(API);
-                if (!res.ok) throw new Error('bad response');
-                tasks = await res.json();
+
+                const response =
+                    await fetch(
+                        API,
+                        {
+                            headers: {
+                                'Accept':
+                                    'application/json'
+                            }
+                        }
+                    );
+
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        `API returned ${response.status}`
+                    );
+
+                }
+
+
+                const data =
+                    await response.json();
+
+
+                if (!Array.isArray(data)) {
+
+                    throw new Error(
+                        'API did not return a task array'
+                    );
+
+                }
+
+
+                tasks = data;
+
                 usingSample = false;
-                document.getElementById('offlineBanner').classList.remove('show');
-            } catch (e) {
-                tasks = sample.slice();
-                usingSample = true;
-                document.getElementById('offlineBanner').classList.add('show');
+
+
+                document
+                    .getElementById(
+                        'offlineBanner'
+                    )
+                    .classList.add(
+                        'hidden'
+                    );
+
+
+                document
+                    .getElementById(
+                        'offlineNote'
+                    )
+                    .textContent =
+                    'Connected to SQLite via /api/tasks';
+
+
             }
+            catch (error) {
+
+                console.error(
+                    'Could not load API tasks:',
+                    error
+                );
+
+
+                tasks =
+                    sample.map(
+                        task => ({
+                            ...task
+                        })
+                    );
+
+
+                usingSample = true;
+
+
+                document
+                    .getElementById(
+                        'offlineBanner'
+                    )
+                    .classList.remove(
+                        'hidden'
+                    );
+
+
+                document
+                    .getElementById(
+                        'offlineNote'
+                    )
+                    .textContent =
+                    'Offline — sample data shown';
+
+            }
+
+
             render();
+
         }
 
+
+
+        /* =========================================================
+           RENDER
+           ========================================================= */
+
         function render() {
-            const scored = tasks.map(t => ({ ...t, score: t.priorityScore ?? priorityScore(t) }));
-            let visible = scored;
-            if (currentFilter === 'active') visible = scored.filter(t => !t.isCompleted);
-            if (currentFilter === 'completed') visible = scored.filter(t => t.isCompleted);
-            visible.sort((a, b) => b.score - a.score);
 
-            document.getElementById('statCount').textContent = scored.filter(t => !t.isCompleted).length;
-            document.getElementById('statCritical').textContent = scored.filter(t => !t.isCompleted && t.score >= 70).length;
-            document.getElementById('statDone').textContent = scored.filter(t => t.isCompleted).length;
+            const scored =
+                tasks.map(
+                    task => ({
+                        ...task,
+                        score: getScore(task)
+                    })
+                );
 
-            const q = document.getElementById('queue');
-            q.innerHTML = '';
 
-            if (visible.length === 0) {
-                q.innerHTML = `<div class="empty"><div class="glyph">◎</div><p>Queue is clear. Add a task to bring it into the pattern.</p></div>`;
+            document
+                .getElementById(
+                    'statActive'
+                )
+                .textContent =
+                scored.filter(
+                    task => !task.isCompleted
+                ).length;
+
+
+            document
+                .getElementById(
+                    'statCritical'
+                )
+                .textContent =
+                scored.filter(
+                    task =>
+                        !task.isCompleted &&
+                        task.score >= 70
+                ).length;
+
+
+            document
+                .getElementById(
+                    'statDone'
+                )
+                .textContent =
+                scored.filter(
+                    task => task.isCompleted
+                ).length;
+
+
+            renderList(scored);
+
+            renderMatrix(scored);
+
+
+            lucide.createIcons();
+
+        }
+
+
+
+        /* =========================================================
+           GAUGE
+           ========================================================= */
+
+        function gaugeSvg(score, taskTier) {
+
+            const capped =
+                Math.max(
+                    0,
+                    Math.min(score, 100)
+                );
+
+
+            const circumference =
+                2 * Math.PI * 18;
+
+
+            const offset =
+                circumference -
+                (capped / 100) *
+                circumference;
+
+
+            return `
+
+        <svg
+          width="44"
+          height="44"
+          viewBox="0 0 44 44"
+          class="-rotate-90"
+        >
+
+          <circle
+            cx="22"
+            cy="22"
+            r="18"
+            fill="none"
+            stroke="#1e2538"
+            stroke-width="4"
+          ></circle>
+
+
+          <circle
+            class="gauge-value"
+            cx="22"
+            cy="22"
+            r="18"
+            fill="none"
+            stroke="${taskTier.color}"
+            stroke-width="4"
+            stroke-linecap="round"
+            stroke-dasharray="${circumference}"
+            stroke-dashoffset="${offset}"
+          ></circle>
+
+        </svg>
+
+      `;
+
+        }
+
+
+
+        /* =========================================================
+           LIST VIEW
+           ========================================================= */
+
+        function renderList(scored) {
+
+            let visible =
+                [...scored];
+
+
+            if (
+                currentFilter === 'active'
+            ) {
+
+                visible =
+                    visible.filter(
+                        task =>
+                            !task.isCompleted
+                    );
+
+            }
+
+
+            if (
+                currentFilter === 'completed'
+            ) {
+
+                visible =
+                    visible.filter(
+                        task =>
+                            task.isCompleted
+                    );
+
+            }
+
+
+            visible.sort(
+                (a, b) =>
+                    b.score - a.score
+            );
+
+
+            const element =
+                document.getElementById(
+                    'listView'
+                );
+
+
+            element.innerHTML = '';
+
+
+            if (
+                visible.length === 0
+            ) {
+
+                element.innerHTML = `
+
+          <div
+            class="text-center py-16 border border-dashed border-slate-800 rounded-xl text-slate-500 text-sm"
+          >
+            Queue is clear.
+          </div>
+
+        `;
+
+                return;
+
+            }
+
+
+            visible.forEach(
+                (task, index) => {
+
+                    const taskTier =
+                        tier(task.score);
+
+
+                    const countdown =
+                        fmtCountdown(task);
+
+
+                    const row =
+                        document.createElement(
+                            'div'
+                        );
+
+
+                    row.className =
+                        'row-card bg-slate-900/60 border border-slate-800 hover:border-slate-700 rounded-xl px-4 py-3.5 flex items-center gap-4'
+                        +
+                        (
+                            task.isCompleted
+                                ? ' opacity-50'
+                                : ''
+                        );
+
+
+                    row.style.animationDelay =
+                        (index * 0.03) +
+                        's';
+
+
+                    row.innerHTML = `
+
+            <span
+              class="font-mono-data text-xs text-slate-600 w-5 text-center"
+            >
+              ${String(index + 1).padStart(2, '0')}
+            </span>
+
+
+            <div
+              class="relative w-11 h-11 flex-shrink-0 flex items-center justify-center"
+            >
+
+              ${gaugeSvg(
+                        task.score,
+                        taskTier
+                    )}
+
+
+              <span
+                class="absolute inset-0 flex items-center justify-center font-mono-data text-[11px] font-semibold ${taskTier.cls}"
+              >
+                ${Math.round(
+                        task.score
+                    )}
+              </span>
+
+            </div>
+
+
+            <div class="min-w-0 flex-1">
+
+              <div class="flex items-center gap-2 flex-wrap">
+
+                <span
+                  class="font-semibold text-sm ${task.isCompleted
+                            ? 'line-through text-slate-500'
+                            : ''
+                        }"
+                >
+                  ${esc(task.title)}
+                </span>
+
+
+                <span
+                  class="font-mono-data text-[10px] uppercase border border-slate-700 text-slate-400 px-2 py-0.5 rounded-full"
+                >
+                  ${esc(
+                            task.subject || '—'
+                        )}
+                </span>
+
+              </div>
+
+
+              <div
+                class="font-mono-data text-xs text-slate-500 mt-1 flex gap-3"
+              >
+
+                <span>
+                  ${fmtDue(
+                            task.dueDate
+                        )}
+                </span>
+
+
+                <span
+                  class="${task.isCompleted
+                            ? 'text-emerald-400'
+                            : countdown.cls
+                        }"
+                >
+                  ${task.isCompleted
+                            ? 'Landed'
+                            : countdown.text
+                        }
+                </span>
+
+              </div>
+
+            </div>
+
+
+            <div
+              class="text-right font-mono-data hidden sm:block"
+            >
+
+              <div class="text-sm font-semibold">
+                ${task.marksWeight}%
+              </div>
+
+              <div class="text-[9px] uppercase text-slate-600">
+                weight
+              </div>
+
+            </div>
+
+
+            ${!task.isCompleted
+                            ? `
+
+                  <button
+                    type="button"
+                    data-id="${task.id}"
+                    class="complete-btn w-8 h-8 rounded-lg border border-slate-700 text-slate-400 hover:border-emerald-400 hover:text-emerald-400 flex items-center justify-center"
+                    title="Mark as completed"
+                  >
+
+                    <i
+                      data-lucide="check"
+                      class="w-4 h-4"
+                    ></i>
+
+                  </button>
+
+                `
+                            : ''
+                        }
+
+          `;
+
+
+                    element.appendChild(row);
+
+                }
+            );
+
+
+            element
+                .querySelectorAll(
+                    '.complete-btn'
+                )
+                .forEach(
+                    button => {
+
+                        button.addEventListener(
+                            'click',
+                            () =>
+                                completeTask(
+                                    button.dataset.id
+                                )
+                        );
+
+                    }
+                );
+
+        }
+
+
+
+        /* =========================================================
+           MATRIX
+           ========================================================= */
+
+        function renderMatrix(scored) {
+
+            const active =
+                scored.filter(
+                    task =>
+                        !task.isCompleted
+                );
+
+
+            const quadrants = {
+
+                doFirst: [],
+                schedule: [],
+                quick: [],
+                later: []
+
+            };
+
+
+            active.forEach(
+                task => {
+
+                    const heavy =
+                        Number(
+                            task.marksWeight
+                        ) >= 20;
+
+
+                    const soon =
+                        daysLeft(task) <= 3;
+
+
+                    if (
+                        heavy &&
+                        soon
+                    ) {
+
+                        quadrants.doFirst.push(
+                            task
+                        );
+
+                    }
+
+                    else if (
+                        heavy &&
+                        !soon
+                    ) {
+
+                        quadrants.schedule.push(
+                            task
+                        );
+
+                    }
+
+                    else if (
+                        !heavy &&
+                        soon
+                    ) {
+
+                        quadrants.quick.push(
+                            task
+                        );
+
+                    }
+
+                    else {
+
+                        quadrants.later.push(
+                            task
+                        );
+
+                    }
+
+                }
+            );
+
+
+            Object
+                .values(quadrants)
+                .forEach(
+                    array =>
+                        array.sort(
+                            (a, b) =>
+                                b.score - a.score
+                        )
+                );
+
+
+            const cardHtml =
+                task => {
+
+                    const taskTier =
+                        tier(task.score);
+
+
+                    const countdown =
+                        fmtCountdown(task);
+
+
+                    return `
+
+            <div
+              class="row-card bg-slate-950/60 border border-slate-800 rounded-lg px-3 py-2.5 flex items-center gap-3"
+            >
+
+              <span
+                class="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                style="background:${taskTier.color}"
+              ></span>
+
+
+              <div
+                class="min-w-0 flex-1"
+              >
+
+                <div
+                  class="text-xs font-semibold truncate"
+                >
+                  ${esc(task.title)}
+                </div>
+
+
+                <div
+                  class="font-mono-data text-[10px] text-slate-500 flex gap-2 mt-0.5"
+                >
+
+                  <span>
+                    ${esc(
+                        task.subject || '—'
+                    )}
+                  </span>
+
+
+                  <span
+                    class="${countdown.cls}"
+                  >
+                    ${countdown.text}
+                  </span>
+
+                </div>
+
+              </div>
+
+
+              <button
+                type="button"
+                data-id="${task.id}"
+                class="complete-btn text-slate-500 hover:text-emerald-400"
+                title="Mark as completed"
+              >
+
+                <i
+                  data-lucide="check"
+                  class="w-3.5 h-3.5"
+                ></i>
+
+              </button>
+
+            </div>
+
+          `;
+
+                };
+
+
+            const fill =
+                (
+                    id,
+                    array,
+                    emptyText
+                ) => {
+
+                    document
+                        .getElementById(id)
+                        .innerHTML =
+                        array.length
+                            ? array
+                                .map(cardHtml)
+                                .join('')
+                            : `
+
+                <div
+                  class="text-xs text-slate-600 font-mono-data py-2"
+                >
+                  ${emptyText}
+                </div>
+
+              `;
+
+                };
+
+
+            fill(
+                'qDoFirst',
+                quadrants.doFirst,
+                'Nothing critical right now.'
+            );
+
+
+            fill(
+                'qSchedule',
+                quadrants.schedule,
+                'Nothing to schedule.'
+            );
+
+
+            fill(
+                'qQuick',
+                quadrants.quick,
+                'No quick wins pending.'
+            );
+
+
+            fill(
+                'qLater',
+                quadrants.later,
+                'Nothing parked here.'
+            );
+
+
+            document
+                .querySelectorAll(
+                    '#matrixView .complete-btn'
+                )
+                .forEach(
+                    button => {
+
+                        button.addEventListener(
+                            'click',
+                            () =>
+                                completeTask(
+                                    button.dataset.id
+                                )
+                        );
+
+                    }
+                );
+
+        }
+
+
+
+        /* =========================================================
+           COMPLETE TASK
+           ========================================================= */
+
+        async function completeTask(id) {
+
+            const task =
+                tasks.find(
+                    item =>
+                        String(item.id) ===
+                        String(id)
+                );
+
+
+            if (!task) {
                 return;
             }
 
-            visible.forEach((t, i) => {
-                const cappedScore = Math.min(t.score, 100);
-                const circumference = 2 * Math.PI * 22;
-                const offset = circumference - (cappedScore / 100) * circumference;
-                const tr = tier(t.score);
-                const cd = fmtCountdown(t.dueDate);
 
-                const row = document.createElement('div');
-                row.className = 'row' + (t.isCompleted ? ' completed' : '');
-                row.style.animationDelay = (i * 0.04) + 's';
-                row.innerHTML = `
-                        <div class="rank"><span class="n">${String(i + 1).padStart(2, '0')}</span></div>
-                        <div class="gauge">
-                            <svg width="56" height="56" viewBox="0 0 56 56">
-                                <circle class="gauge-track" cx="28" cy="28" r="22"></circle>
-                                <circle class="gauge-value" cx="28" cy="28" r="22"
-                                    stroke="${tr.color}"
-                                    stroke-dasharray="${circumference}"
-                                    stroke-dashoffset="${offset}"></circle>
-                            </svg>
-                            <div class="gauge-num" style="color:${tr.color}">${Math.round(t.score)}</div>
-                        </div>
-                        <div class="content">
-                            <div class="title-line">
-                                <span class="title">${escapeHtml(t.title)}</span>
-                                <span class="tag">${escapeHtml(t.subject || '—')}</span>
-                            </div>
-                            <div class="meta-line">
-                                <span>${fmtDue(t.dueDate)}</span>
-                                <span class="countdown ${t.isCompleted ? '' : cd.cls}">${t.isCompleted ? 'Landed' : cd.text}</span>
-                            </div>
-                        </div>
-                        <div class="weight">
-                            <div class="val">${t.marksWeight}%</div>
-                            <div class="lbl">weight</div>
-                        </div>
-                        <div class="actions">
-                            ${!t.isCompleted ? `<button class="icon-btn complete" title="Mark complete" data-id="${t.id}">
-                                <svg viewBox="0 0 16 16" fill="none"><path d="M2 8.5l3.5 3.5L14 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            </button>` : ''}
-                        </div>
-                    `;
-                q.appendChild(row);
-            });
+            /* Offline */
+            if (usingSample) {
 
-            document.querySelectorAll('.icon-btn.complete').forEach(btn => {
-                btn.addEventListener('click', () => completeTask(btn.dataset.id));
-            });
-        }
+                task.isCompleted = true;
 
-        function escapeHtml(str) {
-            const d = document.createElement('div');
-            d.textContent = str ?? '';
-            return d.innerHTML;
-        }
-
-        async function completeTask(id) {
-            const t = tasks.find(x => String(x.id) === String(id));
-            if (t) t.isCompleted = true;
-            render();
-            if (!usingSample) {
-                try {
-                    await fetch(`${API}/${id}/complete`, { method: 'PUT' });
-                } catch (e) { /* optimistic update stands */ }
-            }
-        }
-
-        document.querySelectorAll('.filters button').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.filters button').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                currentFilter = btn.dataset.filter;
                 render();
-            });
-        });
+
+                return;
+
+            }
+
+
+            /* C# API */
+
+            try {
+
+                const response =
+                    await fetch(
+                        `${API}/${id}/complete`,
+                        {
+                            method: 'PUT',
+                            headers: {
+                                'Accept':
+                                    'application/json'
+                            }
+                        }
+                    );
+
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        `Failed to complete task: ${response.status}`
+                    );
+
+                }
+
+
+                let updatedTask =
+                    null;
+
+
+                try {
+
+                    updatedTask =
+                        await response.json();
+
+                }
+                catch {
+
+                    updatedTask =
+                        null;
+
+                }
+
+
+                if (updatedTask) {
+
+                    const index =
+                        tasks.findIndex(
+                            item =>
+                                String(item.id) ===
+                                String(id)
+                        );
+
+
+                    if (index !== -1) {
+
+                        tasks[index] =
+                            updatedTask;
+
+                    }
+
+                }
+                else {
+
+                    task.isCompleted = true;
+
+                }
+
+
+                render();
+
+            }
+            catch (error) {
+
+                console.error(
+                    'Could not complete task:',
+                    error
+                );
+
+
+                alert(
+                    'Could not save the completed task to the database.'
+                );
+
+            }
+
+        }
+
+
+
+        /* =========================================================
+           FILTER BUTTONS
+           ========================================================= */
+
+        document
+            .querySelectorAll(
+                '.filter-btn'
+            )
+            .forEach(
+                button => {
+
+                    button.addEventListener(
+                        'click',
+                        () => {
+
+                            document
+                                .querySelectorAll(
+                                    '.filter-btn'
+                                )
+                                .forEach(
+                                    item => {
+
+                                        item.classList.remove(
+                                            'active'
+                                        );
+
+                                        item.classList.add(
+                                            'text-slate-400'
+                                        );
+
+                                    }
+                                );
+
+
+                            button.classList.add(
+                                'active'
+                            );
+
+                            button.classList.remove(
+                                'text-slate-400'
+                            );
+
+
+                            currentFilter =
+                                button.dataset.filter;
+
+
+                            render();
+
+                        }
+                    );
+
+                }
+            );
+
+
+
+        /* =========================================================
+           VIEW SWITCHER
+           ========================================================= */
+
+        document
+            .querySelectorAll(
+                '.seg-btn'
+            )
+            .forEach(
+                button => {
+
+                    button.addEventListener(
+                        'click',
+                        () => {
+
+                            document
+                                .querySelectorAll(
+                                    '.seg-btn'
+                                )
+                                .forEach(
+                                    item => {
+
+                                        item.classList.remove(
+                                            'active'
+                                        );
+
+                                        item.classList.add(
+                                            'text-slate-400'
+                                        );
+
+                                    }
+                                );
+
+
+                            button.classList.add(
+                                'active'
+                            );
+
+                            button.classList.remove(
+                                'text-slate-400'
+                            );
+
+
+                            currentView =
+                                button.dataset.view;
+
+
+                            document
+                                .getElementById(
+                                    'listView'
+                                )
+                                .classList.toggle(
+                                    'hidden',
+                                    currentView !== 'list'
+                                );
+
+
+                            document
+                                .getElementById(
+                                    'listToolbar'
+                                )
+                                .classList.toggle(
+                                    'hidden',
+                                    currentView !== 'list'
+                                );
+
+
+                            document
+                                .getElementById(
+                                    'matrixView'
+                                )
+                                .classList.toggle(
+                                    'hidden',
+                                    currentView !== 'matrix'
+                                );
+
+                        }
+                    );
+
+                }
+            );
+
+
+
+        /* =========================================================
+           DEFAULT VIEW
+           ========================================================= */
+
+        document
+            .getElementById(
+                'listView'
+            )
+            .classList.add(
+                'hidden'
+            );
+
+
+        document
+            .getElementById(
+                'listToolbar'
+            )
+            .classList.add(
+                'hidden'
+            );
+
+
+
+        /* =========================================================
+           SIDEBAR CONTROLS
+           ========================================================= */
+
+        const sidebar =
+            document.getElementById(
+                'sidebar'
+            );
+
+
+        const scrim =
+            document.getElementById(
+                'scrim'
+            );
+
+
+        function openSb() {
+
+            sidebar.classList.add(
+                'open'
+            );
+
+            scrim.classList.remove(
+                'hidden'
+            );
+
+        }
+
+
+        function closeSb() {
+
+            sidebar.classList.remove(
+                'open'
+            );
+
+            scrim.classList.add(
+                'hidden'
+            );
+
+        }
+
+
+        document
+            .getElementById(
+                'openSidebar'
+            )
+            .addEventListener(
+                'click',
+                openSb
+            );
+
+
+        document
+            .getElementById(
+                'closeSidebar'
+            )
+            .addEventListener(
+                'click',
+                closeSb
+            );
+
+
+        document
+            .getElementById(
+                'newTaskBtn'
+            )
+            .addEventListener(
+                'click',
+                () => {
+
+                    openSb();
+
+
+                    setTimeout(
+                        () => {
+
+                            document
+                                .getElementById(
+                                    'fTitle'
+                                )
+                                .focus();
+
+                        },
+                        150
+                    );
+
+                }
+            );
+
+
+        scrim.addEventListener(
+            'click',
+            closeSb
+        );
+
+
+
+        /* =========================================================
+           CREATE TASK
+           POST /api/tasks
+           ========================================================= */
+
+        document
+            .getElementById(
+                'taskForm'
+            )
+            .addEventListener(
+                'submit',
+                async event => {
+
+                    event.preventDefault();
+
+
+                    /* -----------------------------------------------------
+                       Get actual user-entered values.
+                       Placeholder text is NOT used.
+                       ----------------------------------------------------- */
+
+                    const title =
+                        document
+                            .getElementById(
+                                'fTitle'
+                            )
+                            .value
+                            .trim();
+
+
+                    const subject =
+                        document
+                            .getElementById(
+                                'fSubject'
+                            )
+                            .value
+                            .trim();
+
+
+                    const weight =
+                        parseFloat(
+                            document
+                                .getElementById(
+                                    'fWeight'
+                                )
+                                .value
+                        );
+
+
+                    const due =
+                        document
+                            .getElementById(
+                                'fDue'
+                            )
+                            .value;
+
+
+                    const errorElement =
+                        document.getElementById(
+                            'formErr'
+                        );
+
+
+                    const createButton =
+                        document.getElementById(
+                            'createTaskBtn'
+                        );
+
+
+
+                    /* -----------------------------------------------------
+                       VALIDATION
+                       ----------------------------------------------------- */
+
+                    if (!title) {
+
+                        errorElement.textContent =
+                            'Please enter a task title.';
+
+                        errorElement.classList.remove(
+                            'hidden'
+                        );
+
+                        document
+                            .getElementById(
+                                'fTitle'
+                            )
+                            .focus();
+
+                        return;
+
+                    }
+
+
+                    if (!due) {
+
+                        errorElement.textContent =
+                            'Please select a due date.';
+
+                        errorElement.classList.remove(
+                            'hidden'
+                        );
+
+                        document
+                            .getElementById(
+                                'fDue'
+                            )
+                            .focus();
+
+                        return;
+
+                    }
+
+
+                    if (
+                        Number.isNaN(weight) ||
+                        weight < 0 ||
+                        weight > 100
+                    ) {
+
+                        errorElement.textContent =
+                            'Please enter a weight between 0 and 100%.';
+
+                        errorElement.classList.remove(
+                            'hidden'
+                        );
+
+                        document
+                            .getElementById(
+                                'fWeight'
+                            )
+                            .focus();
+
+                        return;
+
+                    }
+
+
+                    errorElement.classList.add(
+                        'hidden'
+                    );
+
+
+
+                    /* -----------------------------------------------------
+                       DATA SENT TO C#
+                       ----------------------------------------------------- */
+
+                    const newTask = {
+
+                        title: title,
+
+                        subject: subject,
+
+                        dueDate:
+                            new Date(
+                                due
+                            ).toISOString(),
+
+                        marksWeight: weight,
+
+                        isCompleted: false
+
+                    };
+
+
+
+                    /* =====================================================
+                       OFFLINE MODE
+                       ===================================================== */
+
+                    if (usingSample) {
+
+                        const maxId =
+                            tasks.reduce(
+                                (
+                                    max,
+                                    task
+                                ) =>
+                                    Math.max(
+                                        max,
+                                        Number(
+                                            task.id
+                                        ) || 0
+                                    ),
+                                0
+                            );
+
+
+                        newTask.id =
+                            maxId + 1;
+
+
+                        tasks.push(
+                            newTask
+                        );
+
+
+                        event.target.reset();
+
+
+                        render();
+
+
+                        return;
+
+                    }
+
+
+
+                    /* =====================================================
+                       LIVE C# API
+                       ===================================================== */
+
+                    try {
+
+                        createButton.disabled =
+                            true;
+
+
+                        createButton.innerHTML = `
+
+              <i
+                data-lucide="loader-circle"
+                class="w-3.5 h-3.5 animate-spin"
+              ></i>
+
+              Saving...
+
+            `;
+
+
+                        lucide.createIcons();
+
+
+
+                        const response =
+                            await fetch(
+                                API,
+                                {
+                                    method: 'POST',
+
+                                    headers: {
+                                        'Content-Type':
+                                            'application/json',
+
+                                        'Accept':
+                                            'application/json'
+                                    },
+
+                                    body:
+                                        JSON.stringify(
+                                            newTask
+                                        )
+                                }
+                            );
+
+
+                        if (!response.ok) {
+
+                            let message =
+                                'Could not save the task.';
+
+
+                            try {
+
+                                const errorData =
+                                    await response.text();
+
+
+                                if (errorData) {
+
+                                    message =
+                                        errorData;
+
+                                }
+
+                            }
+                            catch {
+
+                            }
+
+
+                            throw new Error(
+                                message
+                            );
+
+                        }
+
+
+
+                        /* C# returns saved task */
+
+                        const savedTask =
+                            await response.json();
+
+
+                        tasks.push(
+                            savedTask
+                        );
+
+
+                        /* Clear the form */
+
+                        event.target.reset();
+
+
+                        /* Refresh UI */
+
+                        render();
+
+
+                        /* Close mobile sidebar */
+
+                        if (
+                            window.innerWidth <
+                            1024
+                        ) {
+
+                            closeSb();
+
+                        }
+
+
+                    }
+                    catch (error) {
+
+                        console.error(
+                            'Could not create task:',
+                            error
+                        );
+
+
+                        errorElement.textContent =
+                            error.message ||
+                            'Could not reach the API — task was not saved.';
+
+
+                        errorElement.classList.remove(
+                            'hidden'
+                        );
+
+                    }
+                    finally {
+
+                        createButton.disabled =
+                            false;
+
+
+                        createButton.innerHTML = `
+
+              <i
+                data-lucide="send"
+                class="w-3.5 h-3.5"
+              ></i>
+
+              Create task
+
+            `;
+
+
+                        lucide.createIcons();
+
+                    }
+
+                }
+            );
+
+
+
+        /* =========================================================
+           INITIALIZE
+           ========================================================= */
+
+        lucide.createIcons();
 
         loadTasks();
-        setInterval(() => { if (currentFilter) render(); }, 60000);
+
+
+
+        /*
+          Refresh countdowns and priority
+          display every minute.
+
+          Does NOT repeatedly call the API.
+        */
+
+        setInterval(
+            render,
+            60000
+        );
+
     </script>
+
 </body>
 </html>
