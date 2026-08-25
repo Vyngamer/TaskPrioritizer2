@@ -1,0 +1,6 @@
+@TaskPrioritizer2_HostAddress = http://localhost:5083
+
+GET {{TaskPrioritizer2_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

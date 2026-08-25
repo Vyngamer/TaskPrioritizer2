@@ -1,0 +1,367 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Task — Approach Queue</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0A121C;
+            --panel: #101B29;
+            --panel-raised: #142235;
+            --border: #1E2E40;
+            --border-soft: #182636;
+            --text: #E8EDF2;
+            --text-muted: #8CA0B3;
+            --text-faint: #546578;
+            --amber: #F2A93B;
+            --cyan: #4FD8CB;
+            --red: #E85C4A;
+            --green: #6FCF97;
+            --font-display: 'Space Grotesk', sans-serif;
+            --font-mono: 'IBM Plex Mono', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            background: radial-gradient(ellipse 1200px 600px at 50% -10%, rgba(79,216,203,0.06), transparent), var(--bg);
+            color: var(--text);
+            font-family: var(--font-display);
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            padding: 32px 20px 80px;
+        }
+
+        .wrap {
+            max-width: 560px;
+            margin: 0 auto;
+        }
+
+        /* back link, mirrors the queue's eyebrow styling */
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            letter-spacing: 0.06em;
+            color: var(--text-muted);
+            text-decoration: none;
+            margin-bottom: 20px;
+            transition: color .15s ease;
+        }
+
+            .back-link:hover {
+                color: var(--cyan);
+            }
+
+            .back-link svg {
+                width: 12px;
+                height: 12px;
+            }
+
+        .header {
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 28px;
+        }
+
+        .eyebrow {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            letter-spacing: 0.18em;
+            color: var(--cyan);
+            text-transform: uppercase;
+            margin: 0 0 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+            .eyebrow .dot {
+                width: 6px;
+                height: 6px;
+                border-radius: 50%;
+                background: var(--cyan);
+                box-shadow: 0 0 8px var(--cyan);
+                animation: pulse 2.4s ease-in-out infinite;
+            }
+
+        @keyframes pulse {
+            0%,100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.35;
+            }
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin: 0;
+            letter-spacing: -0.01em;
+        }
+
+        .header p {
+            margin: 6px 0 0;
+            color: var(--text-muted);
+            font-size: 14px;
+            max-width: 46ch;
+        }
+
+        /* card */
+        .card {
+            background: var(--panel);
+            border: 1px solid var(--border-soft);
+            border-radius: 14px;
+            padding: 26px;
+        }
+
+        .field {
+            margin-bottom: 18px;
+        }
+
+        .field-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        .field label {
+            display: block;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--text-faint);
+            margin-bottom: 7px;
+        }
+
+        .field input {
+            width: 100%;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 11px 13px;
+            color: var(--text);
+            font-family: var(--font-display);
+            font-size: 14.5px;
+            outline: none;
+            transition: border-color .15s ease, box-shadow .15s ease;
+        }
+
+            .field input:focus {
+                border-color: var(--cyan);
+                box-shadow: 0 0 0 3px rgba(79,216,203,0.12);
+            }
+
+            .field input::-webkit-calendar-picker-indicator {
+                filter: invert(0.7);
+                cursor: pointer;
+            }
+
+        .err {
+            color: var(--red);
+            font-size: 12px;
+            font-family: var(--font-mono);
+            margin: -8px 0 16px;
+            display: none;
+        }
+
+            .err.show {
+                display: block;
+            }
+
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 22px;
+        }
+
+            .form-actions a, .form-actions button {
+                flex: 1;
+                padding: 12px;
+                border-radius: 8px;
+                font-family: var(--font-display);
+                font-weight: 600;
+                font-size: 13.5px;
+                cursor: pointer;
+                border: 1px solid var(--border);
+                text-align: center;
+                text-decoration: none;
+            }
+
+        .btn-cancel {
+            background: transparent;
+            color: var(--text-muted);
+        }
+
+            .btn-cancel:hover {
+                color: var(--text);
+            }
+
+        .btn-submit {
+            background: var(--cyan);
+            color: #06201D;
+            border: none;
+            transition: transform .12s ease, box-shadow .12s ease;
+        }
+
+            .btn-submit:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 6px 18px rgba(79,216,203,0.25);
+            }
+
+            .btn-submit:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+                transform: none;
+                box-shadow: none;
+            }
+
+        .banner {
+            font-family: var(--font-mono);
+            font-size: 11.5px;
+            color: var(--red);
+            background: rgba(232,92,74,0.08);
+            border: 1px solid rgba(232,92,74,0.25);
+            padding: 10px 14px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+            .banner.show {
+                display: block;
+            }
+
+        ::selection {
+            background: rgba(79,216,203,0.3);
+        }
+
+        @media (max-width:480px) {
+            .field-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (prefers-reduced-motion:reduce) {
+            * {
+                animation: none !important;
+                transition: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <a class="back-link" href="index.html">
+            <svg viewBox="0 0 12 12" fill="none"><path d="M7.5 2L3 6l4.5 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg>
+            Back to queue
+        </a>
+
+        <div class="header">
+            <p class="eyebrow"><span class="dot"></span>New entry</p>
+            <h1>Add a task</h1>
+            <p>It'll be sequenced automatically by weight and time to deadline.</p>
+        </div>
+
+        <div class="banner" id="apiBanner">Could not reach the API — task not saved.</div>
+
+        <div class="card">
+            <form id="taskForm">
+                <div class="field">
+                    <label for="title">Title</label>
+                    <input type="text" id="title" placeholder="e.g. Database ERD submission" required>
+                </div>
+
+                <div class="field-row">
+                    <div class="field">
+                        <label for="subject">Subject / module</label>
+                        <input type="text" id="subject" placeholder="e.g. Databases" required>
+                    </div>
+                    <div class="field">
+                        <label for="weight">Marks weight (%)</label>
+                        <input type="number" id="weight" min="0" max="100" placeholder="20" required>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label for="dueDate">Due date</label>
+                    <input type="datetime-local" id="dueDate" required>
+                </div>
+
+                <p class="err" id="fErr">Fill in a title, subject, due date, and weight before adding.</p>
+
+                <div class="form-actions">
+                    <a class="btn-cancel" href="index.html">Cancel</a>
+                    <button type="submit" class="btn-submit" id="submitBtn">Add to queue</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const API = '/api/tasks';
+
+        document.getElementById('taskForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const title = document.getElementById('title').value.trim();
+            const subject = document.getElementById('subject').value.trim();
+            const weight = parseFloat(document.getElementById('weight').value);
+            const due = document.getElementById('dueDate').value;
+
+            const fErr = document.getElementById('fErr');
+            const apiBanner = document.getElementById('apiBanner');
+            apiBanner.classList.remove('show');
+
+            if (!title || !subject || !due || isNaN(weight)) {
+                fErr.classList.add('show');
+                return;
+            }
+            fErr.classList.remove('show');
+
+            const newTask = {
+                title,
+                subject,
+                marksWeight: weight,
+                dueDate: new Date(due).toISOString(),
+                isCompleted: false
+            };
+
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Adding…';
+
+            try {
+                const res = await fetch(API, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newTask)
+                });
+                if (!res.ok) throw new Error('failed');
+
+                // back to the queue so the new task shows up
+                window.location.href = 'index.html';
+            } catch (err) {
+                apiBanner.classList.add('show');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Add to queue';
+            }
+        });
+    </script>
+</body>
+</html>

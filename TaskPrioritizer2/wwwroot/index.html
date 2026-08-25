@@ -1,0 +1,664 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Approach Queue</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0A121C;
+            --panel: #101B29;
+            --panel-raised: #142235;
+            --border: #1E2E40;
+            --border-soft: #182636;
+            --text: #E8EDF2;
+            --text-muted: #8CA0B3;
+            --text-faint: #546578;
+            --amber: #F2A93B;
+            --cyan: #4FD8CB;
+            --red: #E85C4A;
+            --green: #6FCF97;
+            --font-display: 'Space Grotesk', sans-serif;
+            --font-mono: 'IBM Plex Mono', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            background: radial-gradient(ellipse 1200px 600px at 50% -10%, rgba(79,216,203,0.06), transparent), var(--bg);
+            color: var(--text);
+            font-family: var(--font-display);
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            padding: 32px 20px 80px;
+        }
+
+        .wrap {
+            max-width: 880px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            gap: 24px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 28px;
+            flex-wrap: wrap;
+        }
+
+        .header-left .eyebrow {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            letter-spacing: 0.18em;
+            color: var(--cyan);
+            text-transform: uppercase;
+            margin: 0 0 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .eyebrow .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--cyan);
+            box-shadow: 0 0 8px var(--cyan);
+            animation: pulse 2.4s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%,100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.35;
+            }
+        }
+
+        .header-left h1 {
+            font-size: 32px;
+            font-weight: 700;
+            margin: 0;
+            letter-spacing: -0.01em;
+        }
+
+        .header-left p {
+            margin: 6px 0 0;
+            color: var(--text-muted);
+            font-size: 14.5px;
+            max-width: 46ch;
+        }
+
+        .stats {
+            display: flex;
+            gap: 22px;
+        }
+
+        .stat {
+            font-family: var(--font-mono);
+            text-align: right;
+        }
+
+            .stat .num {
+                font-size: 26px;
+                font-weight: 600;
+                line-height: 1;
+                color: var(--text);
+            }
+
+            .stat .label {
+                font-size: 10px;
+                letter-spacing: 0.1em;
+                color: var(--text-faint);
+                text-transform: uppercase;
+                margin-top: 5px;
+            }
+
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            gap: 12px;
+        }
+
+            .toolbar .filters {
+                display: flex;
+                gap: 6px;
+                font-family: var(--font-mono);
+                font-size: 12px;
+            }
+
+        .filters button {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            padding: 6px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all .15s ease;
+        }
+
+            .filters button.active {
+                border-color: var(--cyan);
+                color: var(--cyan);
+                background: rgba(79,216,203,0.08);
+            }
+
+            .filters button:hover {
+                color: var(--text);
+            }
+
+        .add-btn {
+            background: var(--cyan);
+            color: #06201D;
+            border: none;
+            font-family: var(--font-display);
+            font-weight: 600;
+            font-size: 13.5px;
+            padding: 10px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: transform .12s ease, box-shadow .12s ease;
+            text-decoration: none;
+        }
+
+            .add-btn:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 6px 18px rgba(79,216,203,0.25);
+            }
+
+            .add-btn:active {
+                transform: translateY(0);
+            }
+
+        .queue {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .row {
+            background: var(--panel);
+            border: 1px solid var(--border-soft);
+            border-radius: 12px;
+            padding: 16px 18px;
+            display: grid;
+            grid-template-columns: auto 56px 1fr auto auto;
+            align-items: center;
+            gap: 18px;
+            opacity: 0;
+            transform: translateY(6px);
+            animation: rise .45s ease forwards;
+            transition: border-color .15s ease, background .15s ease;
+        }
+
+            .row:hover {
+                border-color: var(--border);
+                background: var(--panel-raised);
+            }
+
+            .row.completed {
+                opacity: 0.5 !important;
+            }
+
+                .row.completed .gauge, .row.completed .title {
+                    filter: grayscale(0.6);
+                }
+
+        @keyframes rise {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .rank {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--text-faint);
+            width: 26px;
+            text-align: center;
+        }
+
+            .rank .n {
+                display: block;
+                font-size: 15px;
+                color: var(--text-muted);
+                font-weight: 600;
+            }
+
+        .gauge {
+            position: relative;
+            width: 56px;
+            height: 56px;
+        }
+
+            .gauge svg {
+                transform: rotate(-90deg);
+            }
+
+        .gauge-track {
+            fill: none;
+            stroke: var(--border);
+            stroke-width: 5;
+        }
+
+        .gauge-value {
+            fill: none;
+            stroke-width: 5;
+            stroke-linecap: round;
+            transition: stroke-dashoffset .6s cubic-bezier(.4,0,.2,1), stroke .4s ease;
+        }
+
+        .gauge-num {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-mono);
+            font-size: 12.5px;
+            font-weight: 600;
+        }
+
+        .content {
+            min-width: 0;
+        }
+
+        .title-line {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .title {
+            font-size: 15.5px;
+            font-weight: 600;
+            color: var(--text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .row.completed .title {
+            text-decoration: line-through;
+            text-decoration-color: var(--text-faint);
+        }
+
+        .tag {
+            font-family: var(--font-mono);
+            font-size: 10.5px;
+            letter-spacing: 0.04em;
+            padding: 2px 8px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            white-space: nowrap;
+            text-transform: uppercase;
+        }
+
+        .meta-line {
+            display: flex;
+            gap: 14px;
+            margin-top: 6px;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: var(--text-faint);
+            flex-wrap: wrap;
+        }
+
+            .meta-line .countdown.urgent {
+                color: var(--red);
+            }
+
+            .meta-line .countdown.soon {
+                color: var(--amber);
+            }
+
+        .weight {
+            text-align: right;
+            font-family: var(--font-mono);
+        }
+
+            .weight .val {
+                font-size: 17px;
+                font-weight: 600;
+                color: var(--text);
+            }
+
+            .weight .lbl {
+                font-size: 9.5px;
+                color: var(--text-faint);
+                letter-spacing: 0.08em;
+                text-transform: uppercase;
+                margin-top: 2px;
+            }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .icon-btn {
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all .15s ease;
+        }
+
+            .icon-btn:hover {
+                border-color: var(--green);
+                color: var(--green);
+                background: rgba(111,207,151,0.08);
+            }
+
+            .icon-btn.del:hover {
+                border-color: var(--red);
+                color: var(--red);
+                background: rgba(232,92,74,0.08);
+            }
+
+            .icon-btn svg {
+                width: 16px;
+                height: 16px;
+            }
+
+        .empty {
+            text-align: center;
+            padding: 64px 20px;
+            border: 1px dashed var(--border);
+            border-radius: 14px;
+            color: var(--text-muted);
+        }
+
+            .empty .glyph {
+                font-size: 28px;
+                margin-bottom: 10px;
+                opacity: .5;
+            }
+
+            .empty p {
+                margin: 4px 0 0;
+                font-size: 13.5px;
+            }
+
+        .banner {
+            font-family: var(--font-mono);
+            font-size: 11.5px;
+            color: var(--amber);
+            background: rgba(242,169,59,0.08);
+            border: 1px solid rgba(242,169,59,0.25);
+            padding: 8px 14px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+            .banner.show {
+                display: block;
+            }
+
+        ::selection {
+            background: rgba(79,216,203,0.3);
+        }
+
+        @media (max-width:600px) {
+            .row {
+                grid-template-columns: auto 44px 1fr;
+                grid-template-areas: "rank gauge content" "rank gauge weight" ". . actions";
+                row-gap: 10px;
+            }
+
+            .rank {
+                grid-area: rank;
+            }
+
+            .gauge {
+                grid-area: gauge;
+                width: 44px;
+                height: 44px;
+            }
+
+            .content {
+                grid-area: content;
+            }
+
+            .weight {
+                grid-area: weight;
+                text-align: left;
+            }
+
+            .actions {
+                grid-area: actions;
+                justify-self: end;
+            }
+        }
+
+        @media (prefers-reduced-motion:reduce) {
+            * {
+                animation: none !important;
+                transition: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <div class="header">
+            <div class="header-left">
+                <p class="eyebrow"><span class="dot"></span>Live queue</p>
+                <h1>Approach Queue</h1>
+                <p>Tasks lined up by urgency and weight — highest priority lands first.</p>
+            </div>
+            <div class="stats">
+                <div class="stat"><div class="num" id="statCount">0</div><div class="label">In queue</div></div>
+                <div class="stat"><div class="num" id="statCritical">0</div><div class="label">Critical</div></div>
+                <div class="stat"><div class="num" id="statDone">0</div><div class="label">Landed</div></div>
+            </div>
+        </div>
+
+        <div class="banner" id="offlineBanner">API unreachable — showing sample queue. Connect to /api/tasks to go live.</div>
+
+        <div class="toolbar">
+            <div class="filters">
+                <button class="active" data-filter="active">Active</button>
+                <button data-filter="all">All</button>
+                <button data-filter="completed">Landed</button>
+            </div>
+
+            <a class="add-btn" id="addBtn" href="add-task.html">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>
+                Add task
+            </a>
+        </div>
+
+        <div class="queue" id="queue"></div>
+    </div>
+
+    <script>
+        const API = '/api/tasks';
+        let tasks = [];
+        let usingSample = false;
+        let currentFilter = 'active';
+
+        const sample = [
+            { id: 1, title: 'Database ERD submission', subject: 'Databases', dueDate: addHours(6), marksWeight: 25, isCompleted: false },
+            { id: 2, title: 'AI ethics reflection essay', subject: 'AI & Society', dueDate: addHours(30), marksWeight: 10, isCompleted: false },
+            { id: 3, title: 'Applied ML group project', subject: 'Machine Learning', dueDate: addHours(72), marksWeight: 35, isCompleted: false },
+            { id: 4, title: 'DSA problem set 4', subject: 'Data Structures', dueDate: addHours(150), marksWeight: 8, isCompleted: false },
+            { id: 5, title: 'C systems programming lab', subject: 'Systems', dueDate: addHours(4), marksWeight: 15, isCompleted: false },
+            { id: 6, title: 'Weekly reading response', subject: 'AI & Society', dueDate: addHours(-2), marksWeight: 5, isCompleted: true },
+        ];
+
+        function addHours(h) { return new Date(Date.now() + h * 3600 * 1000).toISOString(); }
+
+        function priorityScore(t) {
+            let daysLeft = (new Date(t.dueDate) - new Date()) / 86400000;
+            if (daysLeft < 0.5) daysLeft = 0.5;
+            const weightScore = t.marksWeight * 0.6;
+            const urgencyScore = (1.0 / daysLeft) * 40.0;
+            return Math.round((weightScore + urgencyScore) * 100) / 100;
+        }
+
+        function tier(score) {
+            if (score >= 70) return { color: 'var(--red)', name: 'critical' };
+            if (score >= 40) return { color: 'var(--amber)', name: 'elevated' };
+            return { color: 'var(--cyan)', name: 'nominal' };
+        }
+
+        function fmtCountdown(dueDate) {
+            const ms = new Date(dueDate) - new Date();
+            const hrs = ms / 3600000;
+            if (hrs < 0) return { text: 'Overdue', cls: 'urgent' };
+            if (hrs < 24) return { text: `T-${Math.round(hrs)}h`, cls: 'urgent' };
+            if (hrs < 72) return { text: `T-${Math.round(hrs / 24)}d`, cls: 'soon' };
+            return { text: `T-${Math.round(hrs / 24)}d`, cls: '' };
+        }
+
+        function fmtDue(dueDate) {
+            return new Date(dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) +
+                ' · ' + new Date(dueDate).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+        }
+
+        async function loadTasks() {
+            try {
+                const res = await fetch(API);
+                if (!res.ok) throw new Error('bad response');
+                tasks = await res.json();
+                usingSample = false;
+                document.getElementById('offlineBanner').classList.remove('show');
+            } catch (e) {
+                tasks = sample.slice();
+                usingSample = true;
+                document.getElementById('offlineBanner').classList.add('show');
+            }
+            render();
+        }
+
+        function render() {
+            const scored = tasks.map(t => ({ ...t, score: t.priorityScore ?? priorityScore(t) }));
+            let visible = scored;
+            if (currentFilter === 'active') visible = scored.filter(t => !t.isCompleted);
+            if (currentFilter === 'completed') visible = scored.filter(t => t.isCompleted);
+            visible.sort((a, b) => b.score - a.score);
+
+            document.getElementById('statCount').textContent = scored.filter(t => !t.isCompleted).length;
+            document.getElementById('statCritical').textContent = scored.filter(t => !t.isCompleted && t.score >= 70).length;
+            document.getElementById('statDone').textContent = scored.filter(t => t.isCompleted).length;
+
+            const q = document.getElementById('queue');
+            q.innerHTML = '';
+
+            if (visible.length === 0) {
+                q.innerHTML = `<div class="empty"><div class="glyph">◎</div><p>Queue is clear. Add a task to bring it into the pattern.</p></div>`;
+                return;
+            }
+
+            visible.forEach((t, i) => {
+                const cappedScore = Math.min(t.score, 100);
+                const circumference = 2 * Math.PI * 22;
+                const offset = circumference - (cappedScore / 100) * circumference;
+                const tr = tier(t.score);
+                const cd = fmtCountdown(t.dueDate);
+
+                const row = document.createElement('div');
+                row.className = 'row' + (t.isCompleted ? ' completed' : '');
+                row.style.animationDelay = (i * 0.04) + 's';
+                row.innerHTML = `
+                        <div class="rank"><span class="n">${String(i + 1).padStart(2, '0')}</span></div>
+                        <div class="gauge">
+                            <svg width="56" height="56" viewBox="0 0 56 56">
+                                <circle class="gauge-track" cx="28" cy="28" r="22"></circle>
+                                <circle class="gauge-value" cx="28" cy="28" r="22"
+                                    stroke="${tr.color}"
+                                    stroke-dasharray="${circumference}"
+                                    stroke-dashoffset="${offset}"></circle>
+                            </svg>
+                            <div class="gauge-num" style="color:${tr.color}">${Math.round(t.score)}</div>
+                        </div>
+                        <div class="content">
+                            <div class="title-line">
+                                <span class="title">${escapeHtml(t.title)}</span>
+                                <span class="tag">${escapeHtml(t.subject || '—')}</span>
+                            </div>
+                            <div class="meta-line">
+                                <span>${fmtDue(t.dueDate)}</span>
+                                <span class="countdown ${t.isCompleted ? '' : cd.cls}">${t.isCompleted ? 'Landed' : cd.text}</span>
+                            </div>
+                        </div>
+                        <div class="weight">
+                            <div class="val">${t.marksWeight}%</div>
+                            <div class="lbl">weight</div>
+                        </div>
+                        <div class="actions">
+                            ${!t.isCompleted ? `<button class="icon-btn complete" title="Mark complete" data-id="${t.id}">
+                                <svg viewBox="0 0 16 16" fill="none"><path d="M2 8.5l3.5 3.5L14 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            </button>` : ''}
+                        </div>
+                    `;
+                q.appendChild(row);
+            });
+
+            document.querySelectorAll('.icon-btn.complete').forEach(btn => {
+                btn.addEventListener('click', () => completeTask(btn.dataset.id));
+            });
+        }
+
+        function escapeHtml(str) {
+            const d = document.createElement('div');
+            d.textContent = str ?? '';
+            return d.innerHTML;
+        }
+
+        async function completeTask(id) {
+            const t = tasks.find(x => String(x.id) === String(id));
+            if (t) t.isCompleted = true;
+            render();
+            if (!usingSample) {
+                try {
+                    await fetch(`${API}/${id}/complete`, { method: 'PUT' });
+                } catch (e) { /* optimistic update stands */ }
+            }
+        }
+
+        document.querySelectorAll('.filters button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.filters button').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentFilter = btn.dataset.filter;
+                render();
+            });
+        });
+
+        loadTasks();
+        setInterval(() => { if (currentFilter) render(); }, 60000);
+    </script>
+</body>
+</html>
